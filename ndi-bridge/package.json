@@ -1,0 +1,27 @@
+{
+  "name": "h5-ndi-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electron to Full NDI RGBA bridge using ffi-napi",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && node dist/index.js",
+    "helper": "npm run build && node dist/index.js --helper",
+    "native-host": "npm run build && node dist/nativeHost.js",
+    "dev": "ts-node src/index.ts",
+    "test": "npm run build"
+  },
+  "dependencies": {
+    "ffi-napi": "^4.0.3",
+    "ref-napi": "^3.0.3",
+    "ref-struct-di": "^1.1.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "@types/ws": "^8.5.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}

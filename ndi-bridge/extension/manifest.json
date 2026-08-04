@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "H5 NDI Bridge",
+  "version": "1.0.0",
+  "description": "Send a cooperating H5 page's RGBA canvas to the local NDI helper.",
+  "permissions": ["activeTab", "scripting", "nativeMessaging"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["capture-main.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["capture-content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

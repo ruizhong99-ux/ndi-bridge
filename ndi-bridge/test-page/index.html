@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>H5 NDI Alpha Demo</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #12161c; color: #eef2f6; }
+    body { display: grid; place-items: center; padding: 24px; }
+    main { width: min(1100px, 100%); }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 20px; font-weight: 650; }
+    .status { color: #9ba8b5; font-size: 13px; }
+    .stage-wrap { overflow: hidden; border: 1px solid #303b47; background-color: #66717b; background-image: linear-gradient(45deg, #56616b 25%, transparent 25%), linear-gradient(-45deg, #56616b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #56616b 75%), linear-gradient(-45deg, transparent 75%, #56616b 75%); background-size: 32px 32px; background-position: 0 0, 0 16px, 16px -16px, -16px 0; }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
+    button, label { border: 1px solid #3d4b59; border-radius: 6px; background: #202a34; color: #eef2f6; padding: 9px 13px; font: inherit; font-size: 13px; cursor: pointer; }
+    button:hover, label:hover { background: #2a3743; }
+    input { display: none; }
+    .meta { margin-top: 10px; color: #82909d; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>H5 NDI Alpha Demo</h1>
+      <span class="status" id="status">1920 x 1080 RGBA canvas</span>
+    </header>
+    <div class="stage-wrap">
+      <canvas id="stage" width="1920" height="1080"></canvas>
+    </div>
+    <div class="toolbar">
+      <label for="png-input">Import transparent PNG</label>
+      <input id="png-input" type="file" accept="image/png">
+      <button id="toggle-output" type="button">Start NDI Output</button>
+      <button id="test-pattern" type="button">Show alpha test</button>
+      <button id="clear" type="button">Clear canvas</button>
+    </div>
+    <div class="meta">Transparent pixels are exported as RGBA and remain transparent in the NDI stream.</div>
+  </main>
+  <script>
+    const canvas = document.getElementById("stage");
+    const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: true });
+    const status = document.getElementById("status");
+    const input = document.getElementById("png-input");
+    const outputButton = document.getElementById("toggle-output");
+    const W = 1920;
+    const H = 1080;
+    let socket;
+    let timer;
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, W, H);
+      status.textContent = "Transparent 1920 x 1080 canvas";
+    }
+
+    function drawTestPattern() {
+      clearCanvas();
+      ctx.fillStyle = "rgba(255, 40, 40, 1)";
+      ctx.fillRect(180, 180, 360, 220);
+      ctx.fillStyle = "rgba(40, 120, 255, .5)";
+      ctx.fillRect(540, 320, 420, 240);
+      ctx.fillStyle = "rgba(40, 255, 120, .25)";
+      ctx.fillRect(900, 180, 420, 420);
+      ctx.strokeStyle = "rgba(255, 255, 255, .85)";
+      ctx.lineWidth = 8;
+      ctx.strokeRect(120, 120, 1200, 620);
+      status.textContent = "Alpha test pattern ready";
+    }
+
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        clearCanvas();
+        const scale = Math.min(W / image.naturalWidth, H / image.naturalHeight);
+        const width = image.naturalWidth * scale;
+        const height = image.naturalHeight * scale;
+        ctx.drawImage(image, (W - width) / 2, (H - height) / 2, width, height);
+        URL.revokeObjectURL(url);
+        status.textContent = `${file.name} imported with alpha`;
+      };
+      image.src = url;
+    });
+
+    document.getElementById("test-pattern").addEventListener("click", drawTestPattern);
+    document.getElementById("clear").addEventListener("click", clearCanvas);
+
+    function stopOutput() {
+      clearInterval(timer);
+      timer = undefined;
+      socket?.close();
+      socket = undefined;
+      outputButton.textContent = "Start NDI Output";
+      status.textContent = "Output stopped";
+    }
+
+    outputButton.addEventListener("click", () => {
+      if (socket || timer) return stopOutput();
+      socket = new WebSocket("ws://127.0.0.1:17890");
+      socket.binaryType = "arraybuffer";
+      socket.onopen = () => {
+        outputButton.textContent = "Stop NDI Output";
+        status.textContent = "Sending 1920 x 1080 RGBA to H5-Studio-Stream";
+        timer = setInterval(() => {
+          if (socket?.readyState !== WebSocket.OPEN) return;
+          const frame = ctx.getImageData(0, 0, W, H);
+          socket.send(frame.data.buffer);
+        }, 1000 / 30);
+      };
+      socket.onerror = () => {
+        stopOutput();
+        status.textContent = "Helper is not running on port 17890";
+      };
+      socket.onclose = () => {
+        if (timer) stopOutput();
+      };
+    });
+
+    window.H5NdiSource = {
+      width: W,
+      height: H,
+      fps: 30,
+      getFrame: () => ctx.getImageData(0, 0, W, H)
+    };
+
+    drawTestPattern();
+  </script>
+</body>
+</html>

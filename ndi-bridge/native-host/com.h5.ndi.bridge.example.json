@@ -1,0 +1,7 @@
+{
+  "name": "com.h5.ndi.bridge",
+  "description": "H5 NDI Bridge Native Messaging host",
+  "path": "C:\\Program Files\\H5-NDI-Bridge\\H5-NDI-Helper.exe",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://EXTENSION_ID/"]
+}
