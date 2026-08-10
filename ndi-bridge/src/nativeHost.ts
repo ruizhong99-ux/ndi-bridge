@@ -1,7 +1,17 @@
 import { IPCReceiver } from "./ipc/IPCReceiver";
+import { readBridgeConfig } from "./config";
+import { MockSender } from "./core/MockSender";
+import { TestPatternSender } from "./core/TestPatternSender";
+import { VideoConfig } from "./core/NDISender";
+import { randomBytes } from "node:crypto";
 
 let receiver: IPCReceiver | undefined;
+let activeAuthToken: string | undefined;
+let testSender: TestPatternSender | undefined;
 let input = Buffer.alloc(0);
+let commandQueue = Promise.resolve();
+let shuttingDown = false;
+const MAX_NATIVE_MESSAGE_BYTES = 1024 * 1024;
 
 function send(message: unknown): void {
   const body = Buffer.from(JSON.stringify(message), "utf8");
@@ -10,35 +20,116 @@ function send(message: unknown): void {
   process.stdout.write(Buffer.concat([header, body]));
 }
 
-function handle(message: { type?: string; sourceName?: string }): void {
-  if (message.type === "start" && !receiver) {
-    receiver = new IPCReceiver({
-      width: Number(process.env.H5_NDI_WIDTH ?? 1920),
-      height: Number(process.env.H5_NDI_HEIGHT ?? 1080),
-      fps: Number(process.env.H5_NDI_FPS ?? 50),
-      sourceName: message.sourceName ?? process.env.H5_NDI_SOURCE ?? "H5-Studio-Stream",
-      port: Number(process.env.H5_NDI_PORT ?? 17890),
-      queueSize: 8
-    });
-    receiver.start();
-    send({ type: "started" });
-  } else if (message.type === "stop") {
-    receiver?.stop();
-    receiver = undefined;
-    send({ type: "stopped" });
+async function handle(message: unknown): Promise<void> {
+  if (!message || typeof message !== "object") throw new Error("Invalid Native Messaging message");
+  const command = message as { type?: unknown; sourceName?: unknown; width?: unknown; height?: unknown; fps?: unknown; scanMode?: unknown };
+
+  if (command.type === "start") {
+    if (receiver) {
+      send({ type: "started", port: receiver.listeningPort, token: activeAuthToken });
+      return;
+    }
+    testSender?.stop();
+    testSender = undefined;
+
+    const authToken = randomBytes(32).toString("hex");
+    const config = readBridgeConfig(
+      typeof command.sourceName === "string" ? command.sourceName : undefined,
+      { width: typeof command.width === "number" ? command.width : undefined, height: typeof command.height === "number" ? command.height : undefined, fps: typeof command.fps === "number" ? command.fps : undefined, scanMode: command.scanMode === "interlaced" ? "interlaced" : "progressive" },
+      authToken
+    );
+    const sender = process.env.H5_NDI_MOCK === "1" ? new MockSender(config.width, config.height) : undefined;
+    const next = new IPCReceiver(config, sender);
+    try {
+      await next.start();
+      receiver = next;
+      activeAuthToken = authToken;
+      send({ type: "started", port: next.listeningPort, token: authToken });
+    } catch (error) {
+      await next.stop().catch(() => undefined);
+      throw error;
+    }
+    return;
   }
+
+  if (command.type === "stop") {
+    const current = receiver;
+    receiver = undefined;
+    activeAuthToken = undefined;
+    await current?.stop();
+    testSender?.stop();
+    testSender = undefined;
+    send({ type: "stopped" });
+    return;
+  }
+
+  if (command.type === "test-bars") {
+    const current = receiver;
+    receiver = undefined;
+    activeAuthToken = undefined;
+    await current?.stop();
+    testSender?.stop();
+    const video: VideoConfig = {
+      width: typeof command.width === "number" ? command.width : 1920,
+      height: typeof command.height === "number" ? command.height : 1080,
+      fps: typeof command.fps === "number" ? command.fps : 50,
+      sourceName: typeof command.sourceName === "string" ? command.sourceName : "H5-Studio-Stream",
+      scanMode: command.scanMode === "interlaced" ? "interlaced" : "progressive"
+    };
+    testSender = new TestPatternSender(video, process.env.H5_NDI_MOCK === "1" ? new MockSender(video.width, video.height) : undefined);
+    try {
+      testSender.start();
+      send({ type: "test-started" });
+    } catch (error) {
+      testSender.stop();
+      testSender = undefined;
+      throw error;
+    }
+    return;
+  }
+
+  throw new Error(`Unknown Native Messaging command: ${String(command.type)}`);
+}
+
+function enqueue(message: unknown): void {
+  commandQueue = commandQueue.then(async () => {
+    try {
+      await handle(message);
+    } catch (error) {
+      send({ type: "error", message: String(error) });
+    }
+  });
 }
 
 process.stdin.on("data", chunk => {
   input = Buffer.concat([input, chunk]);
   while (input.length >= 4) {
     const length = input.readUInt32LE(0);
+    if (length > MAX_NATIVE_MESSAGE_BYTES) {
+      input = Buffer.alloc(0);
+      send({ type: "error", message: "Native Messaging message is too large" });
+      return;
+    }
     if (input.length < length + 4) return;
     const body = input.subarray(4, length + 4).toString("utf8");
     input = input.subarray(length + 4);
-    try { handle(JSON.parse(body)); } catch (error) { send({ type: "error", message: String(error) }); }
+    try {
+      enqueue(JSON.parse(body));
+    } catch (error) {
+      send({ type: "error", message: String(error) });
+    }
   }
 });
 
-process.stdin.on("end", () => { receiver?.stop(); process.exit(0); });
+async function shutdown(): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  await commandQueue;
+  const current = receiver;
+  receiver = undefined;
+  await current?.stop().catch(() => undefined);
+  process.exit(0);
+}
+
+process.stdin.on("end", () => { void shutdown(); });
 console.error("Powered by NDI");

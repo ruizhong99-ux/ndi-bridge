@@ -1,9 +1,48 @@
 <!doctype html>
 <html lang="en">
-  <meta charset="utf-8">
-  <title>H5 NDI Bridge</title>
-  <style>body{width:260px;font:14px system-ui,sans-serif;margin:16px}button{width:100%;padding:9px;margin-top:10px;cursor:pointer}#status{margin-top:12px;line-height:1.4;word-break:break-word;color:#52606d}</style>
-  <button id="toggle">Start NDI Output</button>
-  <div id="status">Checking current page...</div>
-  <script src="popup.js"></script>
+<meta charset="utf-8">
+<title>H5 NDI Bridge</title>
+<style>
+  :root { color-scheme: light; font: 14px system-ui, sans-serif; }
+  body { width: 300px; margin: 16px; color: #202124; }
+  label { display: block; margin-top: 12px; color: #52606d; font-size: 12px; }
+  input, select, button { width: 100%; box-sizing: border-box; font: inherit; }
+  input, select { padding: 8px; margin-top: 4px; border: 1px solid #aeb5bd; border-radius: 4px; }
+  button { padding: 10px; margin-top: 14px; cursor: pointer; border: 1px solid #8b9299; border-radius: 4px; background: #e5e7e9; color: #202124; }
+  button:disabled { cursor: wait; opacity: .65; }
+  #toggle.outputting { background: #d93025; color: white; border-color: #b3261e; animation: output-pulse 1s ease-in-out infinite; }
+  #toggle.starting, #toggle.stopping { background: #fbbc04; color: #202124; }
+  #test-bars { background: #eef1f4; }
+  #status { display: flex; align-items: center; gap: 7px; margin-top: 14px; line-height: 1.35; color: #52606d; }
+  #indicator { width: 9px; height: 9px; border-radius: 50%; background: #8b9299; flex: none; }
+  #indicator.outputting { background: #d93025; animation: output-pulse 1s ease-in-out infinite; }
+  #indicator.error { background: #d93025; }
+  #warning { margin-top: 8px; padding: 8px; color: #7a4f00; background: #fff4cc; border-radius: 4px; display: none; }
+  #details { margin-top: 8px; color: #697681; font-size: 12px; }
+  #extension-id { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e5e8; color: #52606d; font-size: 11px; }
+  #extension-id-value { margin-top: 4px; overflow-wrap: anywhere; color: #202124; font-family: ui-monospace, monospace; }
+  #copy-id { margin-top: 6px; padding: 6px; font-size: 12px; }
+  @keyframes output-pulse { 50% { opacity: .38; } }
+</style>
+
+<label for="source-name">NDI Source Name</label>
+<input id="source-name" maxlength="128" value="H5-Studio-Stream">
+
+<label for="format">NDI Format</label>
+<select id="format">
+  <option value="1080p50">1920 × 1080 50P</option>
+  <option value="1080i50">1920 × 1080 50i</option>
+</select>
+
+<div id="status"><span id="indicator"></span><span id="status-text">Checking current page...</span></div>
+<div id="details"></div>
+<div id="warning"></div>
+<button id="toggle" type="button">Start NDI Output</button>
+<button id="test-bars" type="button">Start Color Bars</button>
+<div id="extension-id">
+  <div>Extension ID</div>
+  <div id="extension-id-value"></div>
+  <button id="copy-id" type="button">Copy Extension ID</button>
+</div>
+<script src="popup.js"></script>
 </html>

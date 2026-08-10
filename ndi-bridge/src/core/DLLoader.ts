@@ -10,10 +10,24 @@ export interface NDILibrary {
 }
 
 export function loadNDILibrary(): NDILibrary {
+  const packagedRuntime = process.platform === "win32"
+    ? path.resolve(path.dirname(process.execPath), "..", "ndi-runtime", "Processing.NDI.Lib.x64.dll")
+    : undefined;
+  const packagedMacRuntime = process.platform === "darwin"
+    ? path.resolve(path.dirname(process.execPath), "..", "ndi-runtime", "libndi.dylib")
+    : undefined;
   const candidates = process.platform === "win32"
-    ? ["Processing.NDI.Lib.x64.dll", ...(process.env.NDI_RUNTIME ? [path.join(process.env.NDI_RUNTIME, "Processing.NDI.Lib.x64.dll")] : [])]
+    ? [
+      ...(packagedRuntime ? [packagedRuntime] : []),
+      ...(process.env.NDI_RUNTIME ? [path.join(process.env.NDI_RUNTIME, "Processing.NDI.Lib.x64.dll")] : []),
+      "Processing.NDI.Lib.x64.dll"
+    ]
     : process.platform === "darwin"
-      ? ["libndi.dylib", "/Library/NDI SDK for Apple/lib/libndi.dylib"]
+      ? [
+        ...(packagedMacRuntime ? [packagedMacRuntime] : []),
+        "libndi.dylib",
+        "/Library/NDI SDK for Apple/lib/libndi.dylib"
+      ]
       : ["libndi.so"];
 
   let lastError: unknown;

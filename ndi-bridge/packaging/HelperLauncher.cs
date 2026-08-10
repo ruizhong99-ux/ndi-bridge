@@ -10,7 +10,6 @@ internal static class HelperLauncher
         string basePath = AppDomain.CurrentDomain.BaseDirectory;
         string nodePath = Path.Combine(basePath, "runtime", "node.exe");
         string scriptPath = Path.Combine(basePath, "dist", "nativeHost.js");
-        string ndiPath = Path.Combine(basePath, "ndi-runtime");
 
         if (!File.Exists(nodePath) || !File.Exists(scriptPath))
         {
@@ -29,9 +28,6 @@ internal static class HelperLauncher
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
-        info.EnvironmentVariables["NDI_RUNTIME"] = ndiPath;
-        info.EnvironmentVariables["PATH"] = ndiPath + ";" + Environment.GetEnvironmentVariable("PATH");
-
         using (var child = Process.Start(info))
         {
             if (child == null) return 3;

@@ -3,7 +3,7 @@
   "name": "H5 NDI Bridge",
   "version": "1.0.0",
   "description": "Send a cooperating H5 page's RGBA canvas to the local NDI helper.",
-  "permissions": ["activeTab", "scripting", "nativeMessaging"],
+  "permissions": ["activeTab", "scripting", "nativeMessaging", "storage"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html"

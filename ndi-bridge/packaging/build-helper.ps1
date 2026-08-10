@@ -22,6 +22,21 @@ Copy-Item (Join-Path $project "dist\*") (Join-Path $release "dist") -Recurse -Fo
 Copy-Item (Join-Path $project "node_modules") (Join-Path $release "node_modules") -Recurse -Force
 Copy-Item (Join-Path $ndiRoot "*.dll") (Join-Path $release "ndi-runtime") -Force
 
+# The packaged Helper only needs runtime dependencies. Prune TypeScript and other
+# development packages from the copied dependency tree without rebuilding native addons.
+Copy-Item (Join-Path $project "package.json") (Join-Path $release "package.json") -Force
+Copy-Item (Join-Path $project "package-lock.json") (Join-Path $release "package-lock.json") -Force
+Push-Location $release
+try {
+    & npm.cmd prune --omit=dev --ignore-scripts
+    if ($LASTEXITCODE -ne 0) { throw "npm prune failed" }
+}
+finally {
+    Pop-Location
+}
+Remove-Item -LiteralPath (Join-Path $release "package.json") -Force
+Remove-Item -LiteralPath (Join-Path $release "package-lock.json") -Force
+
 $outputExe = Join-Path $release "H5-NDI-Helper.exe"
 $sourceFile = Join-Path $PSScriptRoot "HelperLauncher.cs"
 & $csc /nologo /target:exe "/out:$outputExe" $sourceFile

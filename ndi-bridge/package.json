@@ -2,15 +2,23 @@
   "name": "h5-ndi-bridge",
   "version": "1.0.0",
   "private": true,
-  "description": "Electron to Full NDI RGBA bridge using ffi-napi",
+  "description": "Chrome extension to Full NDI RGBA bridge using ffi-napi",
   "main": "dist/index.js",
   "scripts": {
+    "clean": "node scripts/clean-dist.js",
+    "prebuild": "npm run clean",
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && node dist/index.js",
     "helper": "npm run build && node dist/index.js --helper",
     "native-host": "npm run build && node dist/nativeHost.js",
+    "serve": "node scripts/serve-test-page.js",
+    "smoke:frame": "node scripts/send-one-frame.js",
+    "smoke:package": "node scripts/test-packaged-helper.js",
+    "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File packaging/package-windows-release.ps1",
+    "firewall": "powershell -NoProfile -ExecutionPolicy Bypass -File packaging/register-firewall.ps1",
+    "native:register": "powershell -NoProfile -ExecutionPolicy Bypass -File packaging/register-native-host.ps1",
     "dev": "ts-node src/index.ts",
-    "test": "npm run build"
+    "test": "npm run build && node --test test/*.test.js"
   },
   "dependencies": {
     "ffi-napi": "^4.0.3",

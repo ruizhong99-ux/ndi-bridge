@@ -34,7 +34,6 @@
     <div class="toolbar">
       <label for="png-input">Import transparent PNG</label>
       <input id="png-input" type="file" accept="image/png">
-      <button id="toggle-output" type="button">Start NDI Output</button>
       <button id="test-pattern" type="button">Show alpha test</button>
       <button id="clear" type="button">Clear canvas</button>
     </div>
@@ -45,11 +44,8 @@
     const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: true });
     const status = document.getElementById("status");
     const input = document.getElementById("png-input");
-    const outputButton = document.getElementById("toggle-output");
     const W = 1920;
     const H = 1080;
-    let socket;
-    let timer;
 
     function clearCanvas() {
       ctx.clearRect(0, 0, W, H);
@@ -75,56 +71,40 @@
       if (!file) return;
       const url = URL.createObjectURL(file);
       const image = new Image();
-      image.onload = () => {
+        image.onload = () => {
         clearCanvas();
         const scale = Math.min(W / image.naturalWidth, H / image.naturalHeight);
         const width = image.naturalWidth * scale;
         const height = image.naturalHeight * scale;
         ctx.drawImage(image, (W - width) / 2, (H - height) / 2, width, height);
         URL.revokeObjectURL(url);
-        status.textContent = `${file.name} imported with alpha`;
-      };
-      image.src = url;
+          status.textContent = `${file.name} imported with alpha`;
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          status.textContent = "PNG could not be loaded";
+        };
+        image.src = url;
     });
 
     document.getElementById("test-pattern").addEventListener("click", drawTestPattern);
     document.getElementById("clear").addEventListener("click", clearCanvas);
 
-    function stopOutput() {
-      clearInterval(timer);
-      timer = undefined;
-      socket?.close();
-      socket = undefined;
-      outputButton.textContent = "Start NDI Output";
-      status.textContent = "Output stopped";
-    }
-
-    outputButton.addEventListener("click", () => {
-      if (socket || timer) return stopOutput();
-      socket = new WebSocket("ws://127.0.0.1:17890");
-      socket.binaryType = "arraybuffer";
-      socket.onopen = () => {
-        outputButton.textContent = "Stop NDI Output";
-        status.textContent = "Sending 1920 x 1080 RGBA to H5-Studio-Stream";
-        timer = setInterval(() => {
-          if (socket?.readyState !== WebSocket.OPEN) return;
-          const frame = ctx.getImageData(0, 0, W, H);
-          socket.send(frame.data.buffer);
-        }, 1000 / 30);
-      };
-      socket.onerror = () => {
-        stopOutput();
-        status.textContent = "Helper is not running on port 17890";
-      };
-      socket.onclose = () => {
-        if (timer) stopOutput();
-      };
+    window.addEventListener("message", event => {
+      if (event.source !== window || event.data?.type !== "h5-ndi-status") return;
+      if (event.data.status === "capturing") {
+        status.textContent = `Sending ${event.data.width} x ${event.data.height} RGBA to H5-Studio-Stream`;
+      } else if (event.data.status === "stopped") {
+        status.textContent = "Output stopped";
+      } else if (event.data.status === "error") {
+        status.textContent = event.data.message ?? "RGBA capture failed";
+      }
     });
 
     window.H5NdiSource = {
       width: W,
       height: H,
-      fps: 30,
+      fps: 50,
       getFrame: () => ctx.getImageData(0, 0, W, H)
     };
 

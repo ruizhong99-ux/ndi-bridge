@@ -1,5 +1,5 @@
 export interface FrameSender {
-  start(): void;
+  start(): void | Promise<void>;
   sendFrame(frame: Buffer): void;
-  stop(): void;
+  stop(): void | Promise<void>;
 }
