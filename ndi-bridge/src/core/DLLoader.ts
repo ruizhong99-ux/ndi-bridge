@@ -25,8 +25,15 @@ export function loadNDILibrary(): NDILibrary {
     : process.platform === "darwin"
       ? [
         ...(packagedMacRuntime ? [packagedMacRuntime] : []),
+        ...(process.env.NDI_RUNTIME ? [
+          path.extname(process.env.NDI_RUNTIME) === ".dylib"
+            ? process.env.NDI_RUNTIME
+            : path.join(process.env.NDI_RUNTIME, "libndi.dylib")
+        ] : []),
+        ...(process.env.NDI_RUNTIME_DIR_V6 ? [path.join(process.env.NDI_RUNTIME_DIR_V6, "libndi.dylib")] : []),
         "libndi.dylib",
-        "/Library/NDI SDK for Apple/lib/libndi.dylib"
+        "/Library/NDI SDK for Apple/lib/libndi.dylib",
+        "/Library/NDI SDK for Apple/lib/macOS/libndi.dylib"
       ]
       : ["libndi.so"];
 

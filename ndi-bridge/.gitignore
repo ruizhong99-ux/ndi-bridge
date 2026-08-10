@@ -5,3 +5,5 @@ dist/
 *.pid
 .env
 release-assets/
+release/H5-NDI-Helper-Mac/
+.DS_Store

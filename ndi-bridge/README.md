@@ -51,7 +51,7 @@ The project uses `ref-struct-di` with the same `ref-napi` instance as `ffi-napi`
 
 ## Windows release package and installer
 
-This project now targets Windows only. Build a complete distributable ZIP with:
+Windows remains the primary tested release target. Build a complete distributable ZIP with:
 
 ```powershell
 npm.cmd run package:windows -- -Version 1.0.0
@@ -78,3 +78,21 @@ Remove the Windows installation with:
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
 ```
+
+## macOS developer preview
+
+The macOS build is architecture-specific and must be built on macOS. The current Windows development machine cannot compile or hardware-test a real macOS Helper. Build separately on Apple Silicon and Intel Macs:
+
+```bash
+bash packaging/package-mac.sh 1.0.0
+```
+
+The resulting packages are `H5-NDI-Bridge-macOS-arm64-v1.0.0.tar.gz` and `H5-NDI-Bridge-macOS-x86_64-v1.0.0.tar.gz`. The Mac requires the official NDI SDK/Runtime for Apple, Xcode Command Line Tools, and Chrome or Edge. The builder copies `libndi.dylib` from the local NDI installation; set `NDI_RUNTIME` if it is not in the default SDK location.
+
+After loading `extension/` as an unpacked extension and copying its ID, install from the extracted package root:
+
+```bash
+bash ./install-mac.sh --extension-id YOUR_EXTENSION_ID
+```
+
+With the ID copied to the clipboard, `bash ./install-mac.sh` reads it automatically. The installer registers `com.h5.ndi.bridge` for Chrome and Edge and places the Helper under `~/Library/Application Support/H5-NDI-Bridge/`. See [packaging/USAGE-MAC.txt](packaging/USAGE-MAC.txt) for the full Mac workflow and uninstall command.

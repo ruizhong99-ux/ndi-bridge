@@ -1,0 +1,82 @@
+H5-NDI-Bridge macOS 开发预览使用说明
+====================================
+
+这是 macOS 开发预览版。macOS 安装包必须在 macOS 上构建，因为 ffi-napi、Node.js 原生模块和 NDI 动态库都与 CPU 架构相关。
+Apple Silicon（arm64）和 Intel（x86_64）必须分别构建、分别分发，不能交叉混用。
+
+一、准备环境
+------------
+
+1. macOS 10.15 或更高版本。
+2. Chrome 或 Microsoft Edge。
+3. 安装 Xcode Command Line Tools：
+
+   xcode-select --install
+
+4. 安装官方 NDI SDK/Runtime for Apple，并确认存在 libndi.dylib。
+   默认位置为：
+
+   /Library/NDI SDK for Apple/lib/libndi.dylib
+
+   也可以在构建前指定文件或目录：
+
+   export NDI_RUNTIME=/path/to/libndi.dylib
+
+二、构建发行包
+--------------
+
+在项目根目录执行：
+
+   bash packaging/package-mac.sh 1.0.0
+
+输出位于 release-assets/：
+
+   H5-NDI-Bridge-macOS-arm64-v1.0.0.tar.gz
+   或
+   H5-NDI-Bridge-macOS-x86_64-v1.0.0.tar.gz
+
+构建脚本会自动下载 Node 20.20.2 对应架构的运行时，安装依赖，编译 TypeScript，并把本机 NDI 动态库复制到 Helper 包中。
+
+三、安装
+--------
+
+1. 解压发行包。
+2. 在 Chrome/Edge 中打开扩展管理页，开启“开发者模式”。
+3. 加载解压缩的 extension/，复制页面显示的 32 位扩展 ID。
+4. 在发行包根目录执行：
+
+   bash ./install-mac.sh --extension-id YOUR_EXTENSION_ID
+
+   如果已将扩展 ID 复制到剪贴板，也可以直接执行：
+
+   bash ./install-mac.sh
+
+5. 重启浏览器，再打开 H5-NDI-Bridge 扩展。
+
+安装器会把 Helper 放在：
+
+   ~/Library/Application Support/H5-NDI-Bridge/
+
+并为 Chrome、Edge 写入 Native Messaging 清单。扩展 ID 变化后，需要重新执行安装脚本。
+
+四、使用与测试
+--------------
+
+在提供 window.H5NdiSource 的 H5 页面上打开扩展，设置 NDI 信源名称和格式后点击启动。启动按钮应显示红色闪烁状态；再次点击会停止输出并恢复灰色。
+
+“输出测试彩条”用于不依赖页面内容验证 NDI 链路。可用 NDI Video Monitor 或 OBS 检查信源是否出现。
+
+五、卸载
+--------
+
+   bash ./uninstall-mac.sh
+
+六、常见问题
+------------
+
+若提示找不到 libndi.dylib，请先安装官方 NDI SDK/Runtime for Apple，或设置 NDI_RUNTIME 后重新构建。
+若提示原生模块编译失败，请确认已执行 xcode-select --install，并使用与 Mac 架构匹配的发行包。
+若浏览器找不到 Helper，请确认使用的是当前扩展 ID，并重启浏览器。
+若 NDI Video Monitor 看不到信源，请先确认 Helper 启动成功，再检查 macOS 网络权限、NDI Runtime 和局域网发现配置。
+
+本项目不会把 NDI SDK 动态库自动从 GitHub 下载；发行者应遵守 NDI SDK 的许可和再分发条款。

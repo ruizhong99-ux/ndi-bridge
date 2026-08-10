@@ -15,6 +15,7 @@
     "smoke:frame": "node scripts/send-one-frame.js",
     "smoke:package": "node scripts/test-packaged-helper.js",
     "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File packaging/package-windows-release.ps1",
+    "package:mac": "bash packaging/package-mac.sh",
     "firewall": "powershell -NoProfile -ExecutionPolicy Bypass -File packaging/register-firewall.ps1",
     "native:register": "powershell -NoProfile -ExecutionPolicy Bypass -File packaging/register-native-host.ps1",
     "dev": "ts-node src/index.ts",
