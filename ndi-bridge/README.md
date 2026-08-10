@@ -60,13 +60,21 @@ npm.cmd run package:windows -- -Version 1.0.0
 The ZIP is written to `release-assets/`. It contains the unpacked Edge extension, the self-contained Helper, and Windows install/uninstall scripts. End users should load `extension/` as an unpacked extension, click `Copy Extension ID` in the popup, then open an Administrator PowerShell in the extracted folder and run:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\install-windows.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\install-windows.ps1
 ```
+
+如果当前 PowerShell 已经位于解压目录的 `packaging` 文件夹中，请改用：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-windows.ps1
+```
+
+不要输入 `powershell.C:\...`，`powershell.exe` 后必须有空格；也不要在 `packaging` 目录中重复写 `.\packaging\`。
 
 The installer reads the copied extension ID from the clipboard, installs the Helper under `%ProgramFiles%\H5-NDI-Bridge`, registers Native Messaging, and adds the required Domain/Private firewall rules. It does not install a signed store extension; the unpacked extension must remain loaded in Edge.
 
 Remove the Windows installation with:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
 ```

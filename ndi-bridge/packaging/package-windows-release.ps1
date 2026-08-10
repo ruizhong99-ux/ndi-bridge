@@ -48,7 +48,7 @@ H5-NDI-Bridge Windows Release v$Version
 3. Open the extension popup and click Copy Extension ID.
 4. Open PowerShell as Administrator in this extracted folder and run:
 
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\install-windows.ps1
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\install-windows.ps1
 
 The installer reads the Extension ID from the clipboard, installs the packaged Helper,
 registers Native Messaging, and adds the required Domain/Private firewall rules.
@@ -56,9 +56,17 @@ The extension must remain loaded in Edge; this release does not install a signed
 
 See USAGE-WINDOWS.txt for the complete Chinese usage guide.
 
+If PowerShell is already in the packaging folder, run instead:
+
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-windows.ps1
+
 To remove the installation, run PowerShell as Administrator:
 
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
+
+If PowerShell is already in the packaging folder:
+
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\uninstall-windows.ps1
 "@
 [IO.File]::WriteAllText((Join-Path $staging "README-WINDOWS.txt"), $readme.TrimStart(), (New-Object System.Text.UTF8Encoding($false)))
 

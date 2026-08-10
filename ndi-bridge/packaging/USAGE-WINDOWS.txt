@@ -12,9 +12,18 @@ H5-NDI-Bridge Windows 使用说明
 2. 点击“加载解压缩的扩展”，选择本目录下的 extension 文件夹。
 3. 打开 H5-NDI-Bridge 插件弹窗，点击“复制扩展 ID”。
 4. 以管理员身份打开 PowerShell，切换到本 ZIP 解压后的根目录。
-5. 执行：
+5. 推荐执行以下命令（注意 `powershell.exe` 后必须有空格）：
 
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\install-windows.ps1
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\install-windows.ps1
+
+如果当前 PowerShell 提示符已经显示在 `...\packaging>` 目录中，不能再次写
+`.\packaging\install-windows.ps1`，应改为：
+
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-windows.ps1
+
+也可以在管理员 PowerShell 中直接执行：
+
+   .\install-windows.ps1
 
 安装脚本会从剪贴板读取扩展 ID，安装 Helper、注册 Native Messaging，
 并创建 Domain/Private 网络配置文件下的防火墙规则。若剪贴板内容无效，
@@ -34,7 +43,11 @@ H5-NDI-Bridge Windows 使用说明
 五、卸载
 以管理员身份在 ZIP 解压后的根目录执行：
 
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
+
+如果当前位于 `...\packaging>` 目录，则执行：
+
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\uninstall-windows.ps1
 
 卸载脚本会删除 Native Messaging 注册、对应防火墙规则和
 %ProgramFiles%\H5-NDI-Bridge 目录。Edge 中的 extension 需要另外在
@@ -47,3 +60,5 @@ edge://extensions/ 页面手动移除。
    当前 Edge 扩展的 32 位 ID。
 4. 仍无法发现 NDI：确认 NDI Video Monitor 与本机在同一网络配置文件，
    并检查 Windows 防火墙是否允许 Helper 的 Domain/Private 网络通信。
+5. 如果看到“无法将 powershell.C:\... 识别为 cmdlet”，说明命令中把
+   `powershell.exe` 与路径连在了一起；请重新复制上面的完整命令。
