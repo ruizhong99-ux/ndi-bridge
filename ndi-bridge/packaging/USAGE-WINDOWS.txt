@@ -1,0 +1,49 @@
+H5-NDI-Bridge Windows 使用说明
+==============================
+
+一、准备
+1. 使用 Windows 10/11 64 位系统，并安装 Microsoft Edge。
+2. 从 GitHub Release 下载 ZIP，解压到一个长期保留的本地目录。
+   不要直接在 ZIP 内运行，也不要在安装后随意移动 extension 文件夹。
+3. 确认 Edge 可以打开扩展管理页面：edge://extensions/。
+
+二、首次安装
+1. 打开 edge://extensions/，开启右上角“开发人员模式”。
+2. 点击“加载解压缩的扩展”，选择本目录下的 extension 文件夹。
+3. 打开 H5-NDI-Bridge 插件弹窗，点击“复制扩展 ID”。
+4. 以管理员身份打开 PowerShell，切换到本 ZIP 解压后的根目录。
+5. 执行：
+
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\install-windows.ps1
+
+安装脚本会从剪贴板读取扩展 ID，安装 Helper、注册 Native Messaging，
+并创建 Domain/Private 网络配置文件下的防火墙规则。若剪贴板内容无效，
+脚本会要求手动输入 32 位扩展 ID。
+
+三、开始输出
+1. 打开包含 window.H5NdiSource 的 H5 页面。
+2. 在插件中填写 NDI 信源名称，例如 test1。
+3. 选择信号格式：1920x1080 50P 或 1920x1080 50i。
+4. 点击“启动 NDI 输出”。成功输出时按钮为红色闪烁；再次点击即可停止。
+5. 使用 NDI Video Monitor、OBS 或其他 NDI 应用搜索对应的信源名称。
+
+四、输出测试彩条
+点击“输出测试彩条”可以不依赖当前页面画面测试 NDI 链路。
+测试彩条输出时，仍然可以修改信源名称和格式；再次点击该按钮即可停止。
+
+五、卸载
+以管理员身份在 ZIP 解压后的根目录执行：
+
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\uninstall-windows.ps1
+
+卸载脚本会删除 Native Messaging 注册、对应防火墙规则和
+%ProgramFiles%\H5-NDI-Bridge 目录。Edge 中的 extension 需要另外在
+edge://extensions/ 页面手动移除。
+
+六、常见问题
+1. 找不到信源：确认 Helper 已安装，扩展仍处于“已加载”，并重新点击启动。
+2. 源名未变化：先停止旧输出，关闭其他旧 Helper 进程，再重新启动。
+3. 点击安装脚本后失败：确认 PowerShell 是“管理员”窗口，并且剪贴板中是
+   当前 Edge 扩展的 32 位 ID。
+4. 仍无法发现 NDI：确认 NDI Video Monitor 与本机在同一网络配置文件，
+   并检查 Windows 防火墙是否允许 Helper 的 Domain/Private 网络通信。

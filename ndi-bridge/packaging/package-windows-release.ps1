@@ -38,6 +38,7 @@ Copy-Item -LiteralPath $extensionSource -Destination $staging -Recurse -Force
 Copy-Item -LiteralPath $helperSource -Destination $staging -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "packaging\install-windows.ps1") -Destination (Join-Path $staging "packaging") -Force
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "packaging\uninstall-windows.ps1") -Destination (Join-Path $staging "packaging") -Force
+Copy-Item -LiteralPath (Join-Path $ProjectRoot "packaging\USAGE-WINDOWS.txt") -Destination $staging -Force
 
 $readme = @"
 H5-NDI-Bridge Windows Release v$Version
@@ -52,6 +53,8 @@ H5-NDI-Bridge Windows Release v$Version
 The installer reads the Extension ID from the clipboard, installs the packaged Helper,
 registers Native Messaging, and adds the required Domain/Private firewall rules.
 The extension must remain loaded in Edge; this release does not install a signed store extension.
+
+See USAGE-WINDOWS.txt for the complete Chinese usage guide.
 
 To remove the installation, run PowerShell as Administrator:
 
