@@ -6,6 +6,21 @@ let pendingStart;
 let pendingSourceConfig;
 let captureWidth;
 let captureHeight;
+const bridgeNonce = createSessionNonce();
+
+function createSessionNonce() {
+  const bytes = new Uint8Array(16);
+  if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
+}
+
+function postCommand(command) {
+  window.postMessage({ type: "h5-ndi-command", command, nonce: bridgeNonce }, "*");
+}
 
 function clearAckTimer() {
   clearTimeout(ackTimer);
@@ -28,7 +43,7 @@ function disconnectSocket(error = new Error("RGBA capture ended")) {
   capturing = false;
   frameInFlight = false;
   clearAckTimer();
-  if (wasCapturing) window.postMessage({ type: "h5-ndi-command", command: "stop" }, "*");
+  if (wasCapturing) postCommand("stop");
   if (wasCapturing && error.message !== "RGBA capture stopped") {
     chrome.runtime.sendMessage({ type: "capture-status", status: "error", message: String(error) }).catch(() => undefined);
   }
@@ -38,13 +53,14 @@ function disconnectSocket(error = new Error("RGBA capture ended")) {
 
 window.addEventListener("message", event => {
   if (event.source !== window) return;
+  if (event.data?.nonce !== bridgeNonce) return;
   if (event.data?.type === "h5-ndi-frame" && socket?.readyState === WebSocket.OPEN) {
     if (!capturing || frameInFlight) return;
     if (!(event.data.buffer instanceof ArrayBuffer) || event.data.buffer.byteLength !== captureWidth * captureHeight * 4) {
       return disconnectSocket(new Error("Page returned an invalid RGBA frame"));
     }
     frameInFlight = true;
-    window.postMessage({ type: "h5-ndi-command", command: "pause" }, "*");
+    postCommand("pause");
     try {
       socket.send(event.data.buffer);
       clearAckTimer();
@@ -91,11 +107,11 @@ function startCapture(port = 17890, token) {
       let message;
       try { message = JSON.parse(String(event.data)); } catch { return; }
       if (message.type === "ready") {
-        window.postMessage({ type: "h5-ndi-command", command: "start" }, "*");
+        postCommand("start");
       } else if (message.type === "frame-ack") {
         frameInFlight = false;
         clearAckTimer();
-        window.postMessage({ type: "h5-ndi-command", command: "resume" }, "*");
+        postCommand("resume");
       } else if (message.type === "error") {
         disconnectSocket(new Error(`H5 NDI Helper rejected data: ${message.message}`));
       }
@@ -118,7 +134,7 @@ function getSourceConfig() {
   if (pendingSourceConfig) return Promise.reject(new Error("Source configuration request already pending"));
   return new Promise((resolve, reject) => {
     pendingSourceConfig = { resolve, reject };
-    window.postMessage({ type: "h5-ndi-command", command: "describe-source" }, "*");
+    postCommand("describe-source");
     setTimeout(() => {
       if (pendingSourceConfig?.reject === reject) {
         pendingSourceConfig = undefined;

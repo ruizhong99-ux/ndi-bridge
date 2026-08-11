@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const ffi = require("ffi-napi");
 const ref = require("ref-napi");
 const { NDISender } = require("../dist/core/NDISender.js");
-const { NDI_FOURCC_RGBA } = require("../dist/types/ndi.types.js");
+const { NDI_FOURCC_RGBA, NDI_FRAME_FORMAT_PROGRESSIVE } = require("../dist/types/ndi.types.js");
 
 test("NDISender destroys initialized NDI state when sender creation fails", () => {
   const originalLibrary = ffi.Library;
@@ -53,6 +53,8 @@ test("NDISender passes the original RGBA buffer address and descriptor fields", 
   sender.stop();
 
   assert.equal(descriptor.readInt32LE(8), NDI_FOURCC_RGBA);
+  assert.equal(descriptor.readInt32LE(16), 1);
+  assert.equal(descriptor.readInt32LE(24), NDI_FRAME_FORMAT_PROGRESSIVE);
   assert.equal(descriptor.readInt32LE(48), 8);
   assert.deepEqual([...ref.readPointer(descriptor, 40, 8)], [...input]);
 });

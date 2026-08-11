@@ -2,7 +2,6 @@ import ref from "ref-napi";
 import { loadNDILibrary, NDILibrary } from "./DLLoader";
 import {
   NDI_FOURCC_RGBA,
-  NDI_FRAME_FORMAT_INTERLEAVED,
   NDI_FRAME_FORMAT_PROGRESSIVE,
   NDIlib_send_create_t,
   NDIlib_video_frame_v2_t,
@@ -17,7 +16,6 @@ export interface VideoConfig {
   height: number;
   fps: number;
   sourceName: string;
-  scanMode?: "progressive" | "interlaced";
   queueSize?: number;
 }
 
@@ -34,7 +32,6 @@ export class NDISender implements FrameSender {
   private sourceName?: Buffer;
   private ndiInitialized = false;
   private initialized = false;
-  private pendingInterlacedFrame?: Buffer;
 
   constructor(private readonly config: VideoConfig, library?: NDILibrary) {
     this.library = library ?? loadNDILibrary();
@@ -66,29 +63,14 @@ export class NDISender implements FrameSender {
   sendFrame(frame: Buffer): void {
     if (!this.sender || !this.initialized) throw new Error("NDI sender is not started");
     assertRgbaFrame(frame, this.config.width, this.config.height);
-    if (this.config.scanMode === "interlaced") {
-      if (!this.pendingInterlacedFrame) {
-        this.pendingInterlacedFrame = Buffer.from(frame);
-        return;
-      }
-      const woven = Buffer.allocUnsafe(frame.length);
-      const rowBytes = this.config.width * 4;
-      for (let row = 0; row < this.config.height; row++) {
-        const source = row % 2 === 0 ? this.pendingInterlacedFrame : frame;
-        source.copy(woven, row * rowBytes, row * rowBytes, (row + 1) * rowBytes);
-      }
-      this.pendingInterlacedFrame = undefined;
-      frame = woven;
-    }
-
     const video = new NDIlib_video_frame_v2_t();
     video.xres = this.config.width;
     video.yres = this.config.height;
     video.fourCC = NDI_FOURCC_RGBA;
     video.frame_rate_N = this.config.fps;
-    video.frame_rate_D = this.config.scanMode === "interlaced" ? 2 : 1;
+    video.frame_rate_D = 1;
     video.picture_aspect_ratio = this.config.width / this.config.height;
-    video.frame_format_type = this.config.scanMode === "interlaced" ? NDI_FRAME_FORMAT_INTERLEAVED : NDI_FRAME_FORMAT_PROGRESSIVE;
+    video.frame_format_type = NDI_FRAME_FORMAT_PROGRESSIVE;
     video.timecode = 0;
     // ref.address validates that the Buffer has a live native address; assigning the
     // Buffer itself makes the struct field contain that address, without a memcpy.
@@ -114,7 +96,6 @@ export class NDISender implements FrameSender {
       if (sender) this.library.NDIlib_send_destroy(sender);
     } finally {
       this.queue.clear();
-      this.pendingInterlacedFrame = undefined;
       this.settings = undefined;
       this.sourceName = undefined;
       if (this.ndiInitialized) {

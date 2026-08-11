@@ -3,7 +3,6 @@ import StructFactory from "ref-struct-di";
 
 export const NDI_FOURCC_RGBA = 0x41424752; // 'RGBA' in NDI's little-endian FourCC.
 export const NDI_FRAME_FORMAT_PROGRESSIVE = 1;
-export const NDI_FRAME_FORMAT_INTERLEAVED = 0;
 
 export type NDIHandle = Buffer;
 

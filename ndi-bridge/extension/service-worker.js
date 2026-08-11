@@ -13,17 +13,18 @@ function setState(next) {
 }
 
 function formatVideo(config) {
-  const format = config?.format === "1080i50" ? "1080i50" : "1080p50";
-  return { width: 1920, height: 1080, fps: 50, scanMode: format === "1080i50" ? "interlaced" : "progressive" };
+  return { width: 1920, height: 1080, fps: 50 };
 }
 
 async function loadConfig() {
   const stored = chrome.storage?.local ? await chrome.storage.local.get(DEFAULT_CONFIG) : {};
-  return { ...DEFAULT_CONFIG, ...stored };
+  const next = { ...DEFAULT_CONFIG, ...stored, format: "1080p50" };
+  if (chrome.storage?.local && stored.format !== next.format) await chrome.storage.local.set({ format: next.format });
+  return next;
 }
 
 async function saveConfig(config) {
-  const next = { sourceName: String(config?.sourceName ?? "").trim() || DEFAULT_CONFIG.sourceName, format: config?.format === "1080i50" ? "1080i50" : "1080p50" };
+  const next = { sourceName: String(config?.sourceName ?? "").trim() || DEFAULT_CONFIG.sourceName, format: "1080p50" };
   if (chrome.storage?.local) await chrome.storage.local.set(next);
   return next;
 }

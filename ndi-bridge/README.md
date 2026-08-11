@@ -30,13 +30,13 @@ If NDI Runtime is not installed yet, use `H5_NDI_MOCK=1 npm run dev` to verify t
 
 ## H5 Alpha demo page
 
-The included demo page is a fixed 1920x1080 RGBA canvas. It exposes `window.H5NdiSource` and supports transparent PNG import.
+The included demo page is a fixed 1920x1080 RGBA canvas. The V1 output contract is 1920x1080 at 50 progressive frames per second (50P); legacy interlaced settings are migrated to this format. It exposes `window.H5NdiSource` and supports transparent PNG import.
 
 ```powershell
 node scripts/serve-test-page.js
 ```
 
-Open `http://127.0.0.1:8080`, import a PNG with transparency, or click `Show alpha test`. The page keeps the canvas at 1920x1080 and exposes a 50fps `window.H5NdiSource` even when the browser preview is scaled down. Start and stop output from the extension only.
+Open `http://127.0.0.1:8080`, import a PNG with transparency, or click `Show alpha test`. The page keeps the canvas at 1920x1080 and exposes a 50fps `window.H5NdiSource` even when the browser preview is scaled down. Start and stop output from the extension only; the NDI frame descriptor is always progressive 50P.
 
 ## Verified V1 path
 

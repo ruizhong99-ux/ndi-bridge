@@ -57,7 +57,15 @@ if [ -z "$NDI_LIB" ]; then
 fi
 
 cd "$PROJECT_ROOT"
-"$NPM_BIN" ci
+"$NPM_BIN" ci --ignore-scripts
+# ffi-napi 4.0.3 still enables Node's experimental N-API finalizer types,
+# which no longer match current macOS Node headers. Build it with the stable
+# N-API declarations before packaging the native modules.
+FFI_SOURCE="$PROJECT_ROOT/node_modules/ffi-napi/src/ffi.cc"
+if [ -f "$FFI_SOURCE" ]; then
+  perl -pi -e 's/^#define NAPI_EXPERIMENTAL.*\r?$//' "$FFI_SOURCE"
+fi
+"$NPM_BIN" rebuild ffi-napi ref-napi
 "$NPM_BIN" run build
 
 RELEASE_DIR="$PROJECT_ROOT/release/H5-NDI-Helper-Mac"

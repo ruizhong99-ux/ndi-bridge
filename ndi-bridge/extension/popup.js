@@ -32,7 +32,7 @@ function render(next) {
   testBars.textContent = state.status === "testing" ? "Stop Color Bars" : "Start Color Bars";
   testBars.disabled = busy || state.status === "outputting";
   statusText.textContent = state.message ?? (state.status === "outputting" ? "NDI output is live" : state.status === "error" ? "NDI output error" : "NDI output stopped");
-  details.textContent = state.width ? `${state.width} × ${state.height} ${state.scanMode === "interlaced" ? "50i" : "50P"} · ${state.sourceName ?? ""}` : "";
+  details.textContent = state.width ? `${state.width} × ${state.height} 50P · ${state.sourceName ?? ""}` : "";
   warning.textContent = state.warning ?? "";
   warning.style.display = state.warning ? "block" : "none";
 }

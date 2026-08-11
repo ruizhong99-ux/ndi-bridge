@@ -5,12 +5,19 @@
   let width;
   let height;
   let fps;
+  let acceptedNonce;
+
+  function acceptCommandNonce(nonce) {
+    if (typeof nonce !== "string" || nonce.length < 16) return false;
+    if (!acceptedNonce) acceptedNonce = nonce;
+    return acceptedNonce === nonce;
+  }
 
   function stopWithError(message) {
     clearInterval(timer);
     timer = undefined;
     running = false;
-    window.postMessage({ type: "h5-ndi-status", status: "error", message }, "*");
+    window.postMessage({ type: "h5-ndi-status", status: "error", message, nonce: acceptedNonce }, "*");
   }
 
   function captureFrame() {
@@ -21,7 +28,7 @@
       if (image.width !== width || image.height !== height) {
         return stopWithError(`H5NdiSource returned ${image.width}x${image.height}; expected ${width}x${height}`);
       }
-      window.postMessage({ type: "h5-ndi-frame", width, height, buffer: image.data.buffer }, "*", [image.data.buffer]);
+      window.postMessage({ type: "h5-ndi-frame", width, height, buffer: image.data.buffer, nonce: acceptedNonce }, "*", [image.data.buffer]);
     } catch (error) {
       stopWithError(String(error));
     }
@@ -34,24 +41,24 @@
 
   function describeSource() {
     const candidate = window.H5NdiSource;
-    if (!candidate?.getFrame) return window.postMessage({ type: "h5-ndi-status", status: "missing-source" }, "*");
+    if (!candidate?.getFrame) return window.postMessage({ type: "h5-ndi-status", status: "missing-source", nonce: acceptedNonce }, "*");
     const sourceWidth = Number(candidate.width);
     const sourceHeight = Number(candidate.height);
     const sourceFps = Number(candidate.fps ?? 30);
     if (!Number.isInteger(sourceWidth) || sourceWidth < 1 || !Number.isInteger(sourceHeight) || sourceHeight < 1 || !Number.isFinite(sourceFps) || sourceFps <= 0) {
-      return window.postMessage({ type: "h5-ndi-status", status: "error", message: "H5NdiSource must define positive width, height, and fps" }, "*");
+      return window.postMessage({ type: "h5-ndi-status", status: "error", message: "H5NdiSource must define positive width, height, and fps", nonce: acceptedNonce }, "*");
     }
-    window.postMessage({ type: "h5-ndi-status", status: "source-config", width: sourceWidth, height: sourceHeight, fps: sourceFps }, "*");
+    window.postMessage({ type: "h5-ndi-status", status: "source-config", width: sourceWidth, height: sourceHeight, fps: sourceFps, nonce: acceptedNonce }, "*");
   }
 
   window.addEventListener("message", event => {
-    if (event.source !== window || event.data?.type !== "h5-ndi-command") return;
+    if (event.source !== window || event.data?.type !== "h5-ndi-command" || !acceptCommandNonce(event.data.nonce)) return;
     if (event.data.command === "describe-source") {
       describeSource();
     } else if (event.data.command === "start") {
       if (running) return;
       source = window.H5NdiSource;
-      if (!source?.getFrame) return window.postMessage({ type: "h5-ndi-status", status: "missing-source" }, "*");
+      if (!source?.getFrame) return window.postMessage({ type: "h5-ndi-status", status: "missing-source", nonce: acceptedNonce }, "*");
       width = Number(source.width);
       height = Number(source.height);
       fps = Number(source.fps ?? 30);
@@ -60,7 +67,7 @@
       }
       running = true;
       resumeTimer();
-      window.postMessage({ type: "h5-ndi-status", status: "capturing", width, height, fps }, "*");
+      window.postMessage({ type: "h5-ndi-status", status: "capturing", width, height, fps, nonce: acceptedNonce }, "*");
     } else if (event.data.command === "pause") {
       if (!running) return;
       clearInterval(timer);
@@ -71,7 +78,7 @@
       clearInterval(timer);
       timer = undefined;
       running = false;
-      window.postMessage({ type: "h5-ndi-status", status: "stopped" }, "*");
+      window.postMessage({ type: "h5-ndi-status", status: "stopped", nonce: acceptedNonce }, "*");
     }
   });
 })();
