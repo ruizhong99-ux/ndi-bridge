@@ -33,7 +33,8 @@ function loadCaptureMain() {
     clearInterval(timer) { cleared.push(timer); }
   };
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, "../extension/capture-main.js"), "utf8"), context);
-  return { page, messages, intervals, cleared, send(command) { listeners[0]({ source: page, data: { type: "h5-ndi-command", command } }); } };
+  const nonce = "test-session-nonce-123456";
+  return { page, messages, intervals, cleared, send(command, messageNonce = nonce) { listeners[0]({ source: page, data: { type: "h5-ndi-command", command, nonce: messageNonce } }); } };
 }
 
 test("capture-main pauses frame generation until the transport resumes it", () => {
@@ -49,4 +50,12 @@ test("capture-main pauses frame generation until the transport resumes it", () =
   capture.send("resume");
   assert.equal(capture.intervals.length, 2);
   assert.equal(capture.messages[0].status, "capturing");
+});
+
+test("capture-main ignores commands from a different page message session", () => {
+  const capture = loadCaptureMain();
+  capture.send("start");
+  capture.send("stop", "attacker-session-nonce");
+  assert.equal(capture.intervals.length, 1);
+  assert.equal(capture.cleared.length, 0);
 });

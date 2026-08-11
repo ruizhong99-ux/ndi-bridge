@@ -56,6 +56,9 @@ if ! is_valid_id "$EXTENSION_ID"; then
 fi
 
 HELPER_SOURCE="$SOURCE_ROOT/H5-NDI-Helper-Mac"
+if [ ! -x "$HELPER_SOURCE/h5-ndi-helper" ] && [ -x "$SOURCE_ROOT/release/H5-NDI-Helper-Mac/h5-ndi-helper" ]; then
+  HELPER_SOURCE="$SOURCE_ROOT/release/H5-NDI-Helper-Mac"
+fi
 if [ ! -x "$HELPER_SOURCE/h5-ndi-helper" ]; then
   echo "Mac helper is missing or not executable: $HELPER_SOURCE/h5-ndi-helper" >&2
   echo "Build it first with: bash packaging/package-mac.sh" >&2

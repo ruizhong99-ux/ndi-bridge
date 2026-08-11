@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { NDISender, VideoConfig } from "../core/NDISender";
 import { FrameSender } from "../core/FrameSender";
 import { assertRgbaFrame, expectedRgbaBytes, toFrameBuffer, WebSocketFrame } from "./FrameUtils";
+import { isAllowedLocalOrigin } from "./OriginPolicy";
 
 export interface BridgeConfig extends VideoConfig { port?: number; authToken?: string; }
 
@@ -77,7 +78,7 @@ export class IPCReceiver {
         verifyClient: (info, done) => {
           const token = new URL(info.req.url ?? "/", "ws://127.0.0.1").searchParams.get("token");
           const origin = info.origin;
-          const validOrigin = !origin || origin === "null" || origin.startsWith("http://127.0.0.1") || origin.startsWith("http://localhost");
+          const validOrigin = isAllowedLocalOrigin(origin);
           done(Boolean((!this.config.authToken || token === this.config.authToken) && validOrigin), 1008, "Unauthorized WebSocket client");
         }
       });

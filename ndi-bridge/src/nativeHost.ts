@@ -1,5 +1,5 @@
 import { IPCReceiver } from "./ipc/IPCReceiver";
-import { readBridgeConfig } from "./config";
+import { assertVideoConfig, readBridgeConfig } from "./config";
 import { MockSender } from "./core/MockSender";
 import { TestPatternSender } from "./core/TestPatternSender";
 import { VideoConfig } from "./core/NDISender";
@@ -22,7 +22,7 @@ function send(message: unknown): void {
 
 async function handle(message: unknown): Promise<void> {
   if (!message || typeof message !== "object") throw new Error("Invalid Native Messaging message");
-  const command = message as { type?: unknown; sourceName?: unknown; width?: unknown; height?: unknown; fps?: unknown; scanMode?: unknown };
+  const command = message as { type?: unknown; sourceName?: unknown; width?: unknown; height?: unknown; fps?: unknown };
 
   if (command.type === "start") {
     if (receiver) {
@@ -35,7 +35,7 @@ async function handle(message: unknown): Promise<void> {
     const authToken = randomBytes(32).toString("hex");
     const config = readBridgeConfig(
       typeof command.sourceName === "string" ? command.sourceName : undefined,
-      { width: typeof command.width === "number" ? command.width : undefined, height: typeof command.height === "number" ? command.height : undefined, fps: typeof command.fps === "number" ? command.fps : undefined, scanMode: command.scanMode === "interlaced" ? "interlaced" : "progressive" },
+      { width: typeof command.width === "number" ? command.width : undefined, height: typeof command.height === "number" ? command.height : undefined, fps: typeof command.fps === "number" ? command.fps : undefined },
       authToken
     );
     const sender = process.env.H5_NDI_MOCK === "1" ? new MockSender(config.width, config.height) : undefined;
@@ -64,18 +64,18 @@ async function handle(message: unknown): Promise<void> {
   }
 
   if (command.type === "test-bars") {
+    const video: VideoConfig = {
+      width: typeof command.width === "number" ? command.width : 1920,
+      height: typeof command.height === "number" ? command.height : 1080,
+      fps: typeof command.fps === "number" ? command.fps : 50,
+      sourceName: typeof command.sourceName === "string" ? command.sourceName : "H5-Studio-Stream"
+    };
+    assertVideoConfig(video);
     const current = receiver;
     receiver = undefined;
     activeAuthToken = undefined;
     await current?.stop();
     testSender?.stop();
-    const video: VideoConfig = {
-      width: typeof command.width === "number" ? command.width : 1920,
-      height: typeof command.height === "number" ? command.height : 1080,
-      fps: typeof command.fps === "number" ? command.fps : 50,
-      sourceName: typeof command.sourceName === "string" ? command.sourceName : "H5-Studio-Stream",
-      scanMode: command.scanMode === "interlaced" ? "interlaced" : "progressive"
-    };
     testSender = new TestPatternSender(video, process.env.H5_NDI_MOCK === "1" ? new MockSender(video.width, video.height) : undefined);
     try {
       testSender.start();
